@@ -1,1 +1,4 @@
 this is stupid i hate this KEKW
+git commit -a
+git push
+git pull
