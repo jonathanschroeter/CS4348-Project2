@@ -3,6 +3,7 @@
 using namespace std;
 
 int main(){
+	cout << "aaaaaaaaaaaaaaaaaaa" << endl;
 	cout << "Hello World" << endl;
 	cout << "lolo pls boi" << endl;
 	const char *command = "open() test.txt";
