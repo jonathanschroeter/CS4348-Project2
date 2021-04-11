@@ -1,4 +1,8 @@
 this is stupid i hate this KEKW
+<<<<<<< HEAD
 git commit -a
 git push
 git pull
+=======
+hello caleb, you suck penginus 
+>>>>>>> 29e7eb91894a2439ed452ffee8f53fd378ee6d8b
