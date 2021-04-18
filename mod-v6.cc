@@ -79,6 +79,8 @@ int main(){
 		read_command(command,file_name,&n1,&n2); //function read_command reads next command from keyboard
 		if(command.compare("q") == 0)
 			exit(0);
+		
+		//what is the point of this??
 		else if(command.compare("openfs")==0){
 			fd = open(file_name.c_str(),2);
 			cout << "fd is " << fd << endl;
@@ -92,8 +94,14 @@ int main(){
 	return 0;
 }
 int initfsFun(string file_name, int n1, int n2){
-	sup.isize = n2;
-	sup.fsize = n1;
+
+	//opening the file
+	int fd = open(file_name.c_str(),2);
+
+
+	//we can have 32 i-nodes per block since block size is 2048 and i-nodes are 64 bytes
+	sup.isize = n2; //how many blocks for i-nodes
+	sup.fsize = n1; //file system size in number of blocks
 	
 	for(int i = 0; i < 250; i++){
 		sup.free[i] = 0; //what should we fill in free with??		
@@ -109,4 +117,14 @@ int initfsFun(string file_name, int n1, int n2){
 	sup.time = 0; //set to 0 since we don't understand how to make time an int
 
 	//How do we write this? what do we do??
+
+	lseek(fd,2048,SEEK_SET); //Don't want to write to 0th block, that is the root device
+
+	write(fd,&sup,2048); //writing in the super block
+
+
+	//then we need to write the inodes, which will be in block 3
+	lseek(fd,2048*2,SEEK_SET); //*2 so we can make it the third block
+
+	//what do we do for inodes??
 }
