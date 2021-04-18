@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <bits/stdc++.h>
+#include <unistd.h>
 using namespace std;
 
 int read_command(string &command,string &file_name,int *n1,int *n2){
@@ -14,6 +15,12 @@ int read_command(string &command,string &file_name,int *n1,int *n2){
 	cin >> file_name;
 	if(file_name.compare("openfs") == 0)
 		return 0;
+	if(command.compare("initfs") == 0){
+		cout << "Enter n1 " << endl;
+		cin >> *n1;
+		cout << "Enter n2 " << endl;
+		cin >> *n2;
+	}
         return 0;
 }
 
@@ -33,7 +40,9 @@ int main(){
 			
 		}
 		else if(command.compare("initfs")==0){
-			fd = open("/dev/hda1",2);
+			fd = open(file_name.c_str(),2);
+			lseek(fd,2048,SEEK_SET);
+			write(fd,"hello this is a test",10);
 			cout << "fd is " << fd << endl;
 
 		}
