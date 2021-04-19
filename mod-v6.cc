@@ -119,8 +119,11 @@ int initfsFun(string file_name, int n1, int n2){
 	//How do we write this? what do we do??
 
 	lseek(fd,2048,SEEK_SET); //Don't want to write to 0th block, that is the root device
+	
+	int j = write(fd,&sup,2048); //writing in the super block
 
-	write(fd,&sup,2048); //writing in the super block
+	//printing out how many bytes
+	cout << "This many bytes have been written to the file " << j << endl;
 
 
 	//then we need to write the inodes, which will be in block 3
