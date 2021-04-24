@@ -39,7 +39,7 @@ typedef struct {
 
 inode_type node;
 
-//getting the "." and the ".." inode???
+//getting the "." and the ".." inode
 typedef struct {
 	unsigned int inode;
 	unsigned char filename[28];
@@ -47,8 +47,14 @@ typedef struct {
 
 dir_type rootpar;
 
+
+
+int BLOCK_SIZE = 2048;
+unsigned short allocate = 10000;
+unsigned short direct =   040000;
+
 int initfsFun(string file_name, int n1, int n2);
-int rootcreate(int fd);
+int rootcreate(int fd, int freeblocks);
 
 
 
@@ -107,12 +113,16 @@ int initfsFun(string file_name, int n1, int n2){
 	sup.isize = n2; //how many blocks for i-nodes
 	sup.fsize = n1; //file system size in number of blocks
 	
+	
+	//this needs to be fixed!!!!
 	for(int i = 0; i < 250; i++){
 		sup.free[i] = 0; //what should we fill in free with??		
-	}	
+	}
+
+	sup.nfree = 0; 
+
 	sup.ninode = n2 * 32; //number of free inodes
 
-	cout << "Before inode" << endl;
 
 	
 	if(sup.ninode > 249){
@@ -125,56 +135,43 @@ int initfsFun(string file_name, int n1, int n2){
 		}
 	}
 	
-	cout << "after inode" << endl;
+
+	int freeblocks = (n1-n2-1); //1 for the boot block
 
 	sup.flock = 0; //set to 0 since they are orginally chars in V6
 	sup.ilock = 0;
 	sup.fmod = 0; //if superblock has been changed
-	sup.time = 0; //set to 0 since we don't understand how to make time an int
+	sup.time = time(0); //getting the time
 
-	//How do we write this? what do we do??
 
 	lseek(fd,2048,SEEK_SET); //Don't want to write to 0th block, that is the root device
 	
-	int j = write(fd,&sup,sizeof(superblock_type)); //writing in the super block
+	write(fd,&sup,sizeof(superblock_type)); //writing in the super block
 
-	//printing out how many bytes
-	//cout << "This many bytes have been written to the file " << j << endl;
-
-	//close(fd);
-	
-	//fd = open(file_name.c_str(),2);
-	//lseek(fd,2048,SEEK_SET);
-	//read(fd,block,sizeof(superblock_type));
-
-	//cout << "isize: " << block->isize << endl;
 
 	//then we need to write the inodes, which will be in block 3
-	lseek(fd,2048*2,SEEK_SET); //*2 so we can make it the third block
+	//lseek(fd,BLOCK_SIZE*2,SEEK_SET); //*2 so we can make it the third block
 
-	rootcreate(fd);
+	rootcreate(fd,freeblocks);
 
 	//what do we do for inodes??
 }
 
-int rootcreate(int fd){
+int rootcreate(int fd,int freeblocks){
 	
 	//creating for the parent
 
-
-	for(int i=0; i<28;i++){
-		rootpar.filename[i] = 0;
-	}		
+		
 	rootpar.filename[0] = '.';
-	rootpar.filename[1] = '\0';
 
 	rootpar.inode = 1;
 
-	node.flags = 0100000;
-	node.nlinks = 1;
+	node.flags = allocate | direct;
+	node.nlinks = 0;
 	node.uid = 0;
 	node.gid = 0;
-	node.size = 32;
+	node.size = 0;
+
 	
 	for(int i = 0; i < 9; i++){
 		node.addr[i] = 0;
@@ -188,8 +185,19 @@ int rootcreate(int fd){
 		node.modtime[i] = 0;	
 	}
 
-	cout << "hi" << endl;	
-	write(fd,&node,32);
+	freeblocks = freeblocks - 1;
+ 
+	lseek(fd,freeblocks*BLOCK_SIZE,SEEK_SET);
+	write(fd,&rootpar,32);
+
+	rootpar.filename[0] = '.';
+	rootpar.filename[1] = '.';
+	write(fd,&rootpar,32);
+
+
+	node.addr[0] = freeblocks; //allocated blocks
+
+
 
 	return 0;
 }	
