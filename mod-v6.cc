@@ -41,7 +41,7 @@ typedef struct {
 
 inode_type node;
 
-//getting the "." and the ".." inode
+//for the "." and the ".."
 typedef struct {
 	unsigned int inode;
 	unsigned char filename[28];
@@ -57,7 +57,8 @@ unsigned short direct =   04000;
 
 int initfsFun(int fd, int n1, int n2);
 int rootcreate(int fd, int freeblocks);
-void AddFree();
+void addfree(int i, int fd);
+void countfree(string filename);
 
 
 int main(){
@@ -71,6 +72,7 @@ int main(){
         char *n2t = '\0';
 	char *dummy = '\0';
 	int done = 0;
+	bool init = false;
 	int fd = 0;
 	stringstream ss;
 	string temp;
@@ -88,7 +90,6 @@ int main(){
 			exit(0);
 		}
 		else if(strcmp(temp, "open")==0){
-			cout << "temp is " << temp << endl;
 			file = strtok(NULL, " ");
 			std::ofstream ofs;
 			ofs.open(file, std::ofstream::out | std::ofstream::trunc);
@@ -102,11 +103,11 @@ int main(){
 				file_name = file;
 			}
 		}
-		else if(strcmp(c2,"initfs") == 0){
+		else if(strcmp(temp,"initfs") == 0){
 			if(file == '\0'){
 				cout << "You have not run open to open a file. Try Again" << endl;
 			}else{
-				cout << "command is " << c3 << endl;
+				cout << "command is " << temp << endl;
 				cout << "initializing the v6 file system. The file name is " <<
 				file_name << endl;
 				n1t = strtok(NULL, " ");
@@ -115,7 +116,15 @@ int main(){
 				n1 = atoi(n1t);
 				n2 = atoi(n2t);
 				initfsFun(fd,n1,n2);
+				init = true;
 			}
+		}
+		else if(strcmp(temp,"count-free") == 0){
+			if(file == '\0' || init == false)
+				cout << "The file has not been opened or not been initalized. Try again." << endl;
+			else
+				countfree(file_name);
+			
 		}
 		else{ 
 			cout << "you have entered an invalid command. Try again" << endl;
@@ -125,10 +134,6 @@ int main(){
 }
 int initfsFun(int fd, int n1, int n2){
 
-	//opening the file
-	//int fd = open(file_name.c_str(),2);
-	
-	superblock_type * block = new superblock_type();
 
 	//we can have 32 i-nodes per block since block size is 2048 and i-nodes are 64 bytes
 	sup.isize = n2; //how many blocks for i-nodes
@@ -158,8 +163,7 @@ int initfsFun(int fd, int n1, int n2){
 	
 
 	int freeroot = 2 + n2; //block for the root
-
-	//for(int i = 0; i < freeb
+	int numdblock = (n1 - n2 - 2); //number of free data blocks
 
 	sup.flock = 0; //set to 0 since they are orginally chars in V6
 	sup.ilock = 0;
@@ -175,6 +179,9 @@ int initfsFun(int fd, int n1, int n2){
 	//then we need to write the inodes, which will be in block 3
 	//lseek(fd,BLOCK_SIZE*2,SEEK_SET); //*2 so we can make it the third block
 
+	for(int i = 0; i < numdblock; i++){
+		addfree(i,fd);
+	}
 	rootcreate(fd,freeroot);
 
 	//what do we do for inodes??
@@ -221,14 +228,25 @@ int rootcreate(int fd,int freeroot){
 	node.addr[0] = freeroot; //set addr[0] to the block that "." ".."
 
 	lseek(fd,2*BLOCK_SIZE,SEEK_SET);
-	write(fd,&node,sizeof(inode_type)); 
+	write(fd,&node,sizeof(inode_type));
+	
+	sup.ninode = sup.ninode - 1;
+	sup.nfree = sup.nfree - 1;
+	lseek(fd,BLOCK_SIZE,SEEK_SET);
+	write(fd,&sup,sizeof(superblock_type));
 
 	return 0;
 }	
+void countfree(string filename){
 
-void addfree(int numblock){
+	cout << "The number of free i-nodes for the V6 file system " << filename << " is " << sup.ninode << endl;
+	cout << "The number of free data blocks for the v6 file system " << filename << " is " << sup.nfree << endl;
 
+}
+void addfree(int numblock, int fd){
 
-
-
+	if(sup.nfree < 250){
+		sup.free[sup.nfree] = numblock;
+		sup.nfree++;
+	}
 }
