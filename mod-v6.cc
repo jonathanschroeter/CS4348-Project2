@@ -75,6 +75,7 @@ int main(){
 	stringstream ss;
 	string temp;
 
+
 	while(!done){
 		cout << "Enter command" << endl;
         	scanf(" %[^\n]s", command);
