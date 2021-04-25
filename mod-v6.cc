@@ -52,9 +52,8 @@ dir_type rootpar;
 
 
 int BLOCK_SIZE = 2048;
-unsigned short allocate = 10000;
-unsigned short direct =   04000;
-
+unsigned short allocate = 0100000;
+unsigned short direct =   0040000;
 int initfsFun(int fd, int n1, int n2);
 int rootcreate(int fd, int freeblocks);
 void addfree(int i, int fd);
@@ -115,8 +114,12 @@ int main(){
 				cout << "N1 and N2 are " << n1t << " and " << n2t << endl;
 				n1 = atoi(n1t);
 				n2 = atoi(n2t);
-				initfsFun(fd,n1,n2);
-				init = true;
+				if(n1 < 4 || n2 > n1){
+					cout << "You have entered invalid sizes for n1 or n2. Try again" << endl;
+				}else{
+					initfsFun(fd,n1,n2);
+					init = true;
+				}
 			}
 		}
 		else if(strcmp(temp,"count-free") == 0){
@@ -248,5 +251,9 @@ void addfree(int numblock, int fd){
 	if(sup.nfree < 250){
 		sup.free[sup.nfree] = numblock;
 		sup.nfree++;
+	}else{
+		//what do we do here?
 	}
+	lseek(fd,BLOCK_SIZE,SEEK_SET);
+	write(fd,&sup,sizeof(superblock_type));
 }
