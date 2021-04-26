@@ -53,12 +53,13 @@ dir_type rootpar;
 
 int BLOCK_SIZE = 2048;
 unsigned short allocate = 0100000;
+unsigned short unallocate = 0000000;
 unsigned short direct =   0040000;
 int initfsFun(int fd, int n1, int n2);
 int rootcreate(int fd, int freeblocks);
 void addfree(int i, int fd);
 void countfree(string filename);
-
+void inodecreate(int fd, int block);
 
 int main(){
 	char command[300];
@@ -114,7 +115,7 @@ int main(){
 				cout << "N1 and N2 are " << n1t << " and " << n2t << endl;
 				n1 = atoi(n1t);
 				n2 = atoi(n2t);
-				if(n1 < 4 || n2 > n1){
+				if(n1 < 4 || n2 > n1 || (n1-n2) <= 2){
 					cout << "You have entered invalid sizes for n1 or n2. Try again" << endl;
 				}else{
 					initfsFun(fd,n1,n2);
@@ -187,7 +188,10 @@ int initfsFun(int fd, int n1, int n2){
 	}
 	rootcreate(fd,freeroot);
 
-	//what do we do for inodes??
+	//creating the rest of the inodes
+	for(int i = 1; i < sup.ninode; i++){
+		inodecreate(fd,i);
+	}
 	
 	close(fd);
 }
@@ -256,4 +260,28 @@ void addfree(int numblock, int fd){
 	}
 	lseek(fd,BLOCK_SIZE,SEEK_SET);
 	write(fd,&sup,sizeof(superblock_type));
+}
+void inodecreate(int fd, int block){
+
+	int next = block * 64;
+	node.flags = unallocate;
+        node.nlinks = 0;
+        node.uid = 0;
+        node.gid = 0;
+        node.size = 0;
+
+
+        for(int i = 0; i < 9; i++){
+                node.addr[i] = 0;
+        }
+
+        for(int i = 0; i < 2;i++){
+                node.actime[i] = 0;
+        }
+
+        for(int i = 0; i < 2;i++){
+                node.modtime[i] = 0;
+        }
+	lseek(fd,((2*BLOCK_SIZE)+next),SEEK_SET);
+        write(fd,&node,sizeof(inode_type));
 }
