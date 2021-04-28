@@ -269,15 +269,15 @@ void countfree(string filename){
 			int block = sup.free[0];
 			int temp = position.front();
 			position.erase(position.begin());
-			cout << "The block we want read from since nfree is stored in  " << sup.free[0] << endl;
 			lseek(fd,temp,SEEK_SET);
-			read(fd,&storer,sizeof(superblock_type));
+                        read(fd,&storer,sizeof(superblock_type));
 			cout << "nfree from the file is " << storer.nfree << endl; 
 			acc = acc + storer.nfree;
 		}
 		cout << "The number of free data blocks for the v6 file system " << filename << " is " << acc-allocated << endl;
 		
 	}
+	close(fd);
 }
 void addfree(int numblock, int fd,int bootInode){
 
@@ -293,6 +293,9 @@ void addfree(int numblock, int fd,int bootInode){
 		sup.free[sup.nfree] = numblock;
 		cout << "nfree is past 250, writing to block number " << numblock << endl;
 		write(fd,&sup,sizeof(superblock_type));
+		for(int i = 0; i < 250;i++){
+			sup.free[i] = 0;
+		}
 		sup.free[0] = numblock;
 		sup.nfree = 0;
 	}
