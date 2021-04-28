@@ -81,6 +81,7 @@ int main(){
 	int fd = 0;
 	stringstream ss;
 	string temp;
+	int opencount = 0;
 
 
 	while(!done){
@@ -106,11 +107,14 @@ int main(){
 			else{
 				cout << "Opening file " << file << endl;
 				file_name = file;
+				opencount = 0;
 			}
 		}
 		else if(strcmp(temp,"initfs") == 0){
 			if(file == '\0'){
 				cout << "You have not run open to open a file. Try Again" << endl;
+			}else if(opencount != 0){
+				cout << "You must run openfs again to open the file inorder to intialize it again " << endl;	
 			}else{
 				cout << "command is " << temp << endl;
 				cout << "initializing the v6 file system. The file name is " <<
@@ -128,12 +132,13 @@ int main(){
 					}else{
 						initfsFun(fd,n1,n2);
 						init = true;
+						opencount = 1;
 					}
 				}
 			}
 		}
 		else if(strcmp(temp,"count-free") == 0){
-			if(file == '\0' || init == false)
+			if(file == '\0' || init == false || opencount == 0)
 				cout << "The file has not been opened or not been initalized. Try again." << endl;
 			else
 				countfree(file_name);
@@ -161,7 +166,8 @@ int initfsFun(int fd, int n1, int n2){
 	sup.nfree = 0; 
 
 	sup.ninode = n2 * 32; //number of free inodes
-
+	BLOCK_BOOT = (n2 + 2) * BLOCK_SIZE;
+	cout << "Block_boot is " << BLOCK_BOOT << endl;
 
 	
 	if(sup.ninode > 249){
@@ -247,7 +253,8 @@ int rootcreate(int fd,int freeroot){
 	write(fd,&node,sizeof(inode_type));
 	
 	sup.ninode = sup.ninode - 1;
-	sup.nfree = sup.nfree - 1;
+	sup.nfree--;
+	cout << "nfree after adding root data block is " << sup.nfree << endl;
 	lseek(fd,BLOCK_SIZE,SEEK_SET);
 	write(fd,&sup,sizeof(superblock_type));
 
@@ -258,6 +265,7 @@ void countfree(string filename){
 	int ntemp;
 	int allocated = position.size();
 	int fd = open(filename.c_str(),2);
+	vector<int> vectemp(position);
         unsigned int temper[250];
 	int acc = sup.nfree;
 	cout << "The number of free i-nodes for the V6 file system " << filename << " is " << sup.ninode << endl;
@@ -265,16 +273,21 @@ void countfree(string filename){
 	if(sup.free[0] == 0){
 		cout << "The number of free data blocks for the v6 file system " << filename << " is " << sup.nfree << endl;
 	}else{
-		while(position.size() != 0){
-			int block = sup.free[0];
-			int temp = position.front();
-			position.erase(position.begin());
-			lseek(fd,temp,SEEK_SET);
+		int block = sup.free[0];
+		while(vectemp.size() != 0){
+			int temp = vectemp.back();
+			vectemp.pop_back();
+			cout << "The block in count free is " << block << endl;
+			int loc = BLOCK_BOOT + (block * BLOCK_SIZE);
+			cout << "the location of loc is " << loc << endl;
+			cout <<"the location of vectory is " << temp << endl;
+			lseek(fd,loc,SEEK_SET);
                         read(fd,&storer,sizeof(superblock_type));
 			cout << "nfree from the file is " << storer.nfree << endl; 
 			acc = acc + storer.nfree;
+			block = storer.free[0];
 		}
-		cout << "The number of free data blocks for the v6 file system " << filename << " is " << acc-allocated << endl;
+		cout << "The number of free data blocks for the v6 file system " << filename << " is " << acc << endl;
 		
 	}
 	close(fd);
@@ -289,15 +302,16 @@ void addfree(int numblock, int fd,int bootInode){
 	}else{
 		position.push_back(blockArea);
 		lseek(fd,blockArea,SEEK_SET);
-		sup.nfree++;
-		sup.free[sup.nfree] = numblock;
+		//sup.nfree++;
+		sup.nfree--;
+		//sup.free[sup.nfree] = numblock;
 		cout << "nfree is past 250, writing to block number " << numblock << endl;
 		write(fd,&sup,sizeof(superblock_type));
-		for(int i = 0; i < 250;i++){
+		for(int i = 1; i < 249;i++){
 			sup.free[i] = 0;
 		}
 		sup.free[0] = numblock;
-		sup.nfree = 0;
+		sup.nfree = 1;
 	}
 	lseek(fd,BLOCK_SIZE,SEEK_SET);
 	write(fd,&sup,sizeof(superblock_type));
