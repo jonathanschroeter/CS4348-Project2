@@ -101,6 +101,10 @@ int main(){
 			ofs.open(file, std::ofstream::out | std::ofstream::trunc);
 			ofs.close();
 			fd = open(file,2);
+			while(position.size() != 0){
+				position.pop_back();
+			}
+			BLOCK_BOOT = 0;
 			if(fd == -1){
 				cout << "The file does not exist. Try again" << endl;
 			}
