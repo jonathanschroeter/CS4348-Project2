@@ -7,6 +7,7 @@
 #include<sstream>
 #include <stdio.h>
 #include <string.h>
+#include <bits/stdc++.h>
 using namespace std;
 
 
@@ -25,6 +26,8 @@ typedef struct{
 } superblock_type;
 
 superblock_type sup;
+
+superblock_type storer;
 
 //inode struct
 typedef struct {
@@ -52,12 +55,14 @@ dir_type rootpar;
 
 
 int BLOCK_SIZE = 2048;
+vector<int> position;
+int BLOCK_BOOT = 0;
 unsigned short allocate = 0100000;
 unsigned short unallocate = 0000000;
 unsigned short direct =   0040000;
 int initfsFun(int fd, int n1, int n2);
 int rootcreate(int fd, int freeblocks);
-void addfree(int i, int fd);
+void addfree(int i, int fd,int bootInode);
 void countfree(string filename);
 void inodecreate(int fd, int block);
 
@@ -89,7 +94,7 @@ int main(){
 			cout << "The program will now exit" << endl;
 			exit(0);
 		}
-		else if(strcmp(temp, "open")==0){
+		else if(strcmp(temp, "openfs")==0){
 			file = strtok(NULL, " ");
 			std::ofstream ofs;
 			ofs.open(file, std::ofstream::out | std::ofstream::trunc);
@@ -112,14 +117,18 @@ int main(){
 				file_name << endl;
 				n1t = strtok(NULL, " ");
 				n2t = strtok(NULL, " ");
-				cout << "N1 and N2 are " << n1t << " and " << n2t << endl;
-				n1 = atoi(n1t);
-				n2 = atoi(n2t);
-				if(n1 < 4 || n2 > n1 || (n1-n2) <= 2){
+				if(n1t == NULL || n2t == NULL){
 					cout << "You have entered invalid sizes for n1 or n2. Try again" << endl;
 				}else{
-					initfsFun(fd,n1,n2);
-					init = true;
+					cout << "N1 and N2 are " << n1t << " and " << n2t << endl;
+					n1 = atoi(n1t);
+					n2 = atoi(n2t);
+					if(n1 < 4 || n2 > n1 || (n1-n2) <= 2){
+						cout << "You have entered invalid sizes for n1 or n2. Try again" << endl;
+					}else{
+						initfsFun(fd,n1,n2);
+						init = true;
+					}
 				}
 			}
 		}
@@ -142,7 +151,7 @@ int initfsFun(int fd, int n1, int n2){
 	//we can have 32 i-nodes per block since block size is 2048 and i-nodes are 64 bytes
 	sup.isize = n2; //how many blocks for i-nodes
 	sup.fsize = n1; //file system size in number of blocks
-	
+	int bootInode = 2 + n2; 
 	
 	//this needs to be fixed!!!!
 	for(int i = 0; i < 250; i++){
@@ -184,7 +193,7 @@ int initfsFun(int fd, int n1, int n2){
 	//lseek(fd,BLOCK_SIZE*2,SEEK_SET); //*2 so we can make it the third block
 
 	for(int i = 0; i < numdblock; i++){
-		addfree(i,fd);
+		addfree(i,fd,bootInode);
 	}
 	rootcreate(fd,freeroot);
 
@@ -246,17 +255,46 @@ int rootcreate(int fd,int freeroot){
 }	
 void countfree(string filename){
 
+	int ntemp;
+	int allocated = position.size();
+	int fd = open(filename.c_str(),2);
+        unsigned int temper[250];
+	int acc = sup.nfree;
 	cout << "The number of free i-nodes for the V6 file system " << filename << " is " << sup.ninode << endl;
-	cout << "The number of free data blocks for the v6 file system " << filename << " is " << sup.nfree << endl;
 
+	if(sup.free[0] == 0){
+		cout << "The number of free data blocks for the v6 file system " << filename << " is " << sup.nfree << endl;
+	}else{
+		while(position.size() != 0){
+			int block = sup.free[0];
+			int temp = position.front();
+			position.erase(position.begin());
+			cout << "The block we want read from since nfree is stored in  " << sup.free[0] << endl;
+			lseek(fd,temp,SEEK_SET);
+			read(fd,&storer,sizeof(superblock_type));
+			cout << "nfree from the file is " << storer.nfree << endl; 
+			acc = acc + storer.nfree;
+		}
+		cout << "The number of free data blocks for the v6 file system " << filename << " is " << acc-allocated << endl;
+		
+	}
 }
-void addfree(int numblock, int fd){
+void addfree(int numblock, int fd,int bootInode){
 
+	int blockArea = (bootInode*BLOCK_SIZE) + (numblock * BLOCK_SIZE);
+	BLOCK_BOOT = (bootInode * BLOCK_SIZE);
 	if(sup.nfree < 250){
 		sup.free[sup.nfree] = numblock;
 		sup.nfree++;
 	}else{
-		//what do we do here?
+		position.push_back(blockArea);
+		lseek(fd,blockArea,SEEK_SET);
+		sup.nfree++;
+		sup.free[sup.nfree] = numblock;
+		cout << "nfree is past 250, writing to block number " << numblock << endl;
+		write(fd,&sup,sizeof(superblock_type));
+		sup.free[0] = numblock;
+		sup.nfree = 0;
 	}
 	lseek(fd,BLOCK_SIZE,SEEK_SET);
 	write(fd,&sup,sizeof(superblock_type));
