@@ -171,7 +171,6 @@ int initfsFun(int fd, int n1, int n2){
 
 	sup.ninode = n2 * 32; //number of free inodes
 	BLOCK_BOOT = (n2 + 2) * BLOCK_SIZE;
-	cout << "Block_boot is " << BLOCK_BOOT << endl;
 
 	
 	if(sup.ninode > 249){
@@ -258,7 +257,7 @@ int rootcreate(int fd,int freeroot){
 	
 	sup.ninode = sup.ninode - 1;
 	sup.nfree--;
-	cout << "nfree after adding root data block is " << sup.nfree << endl;
+	//cout << "nfree after adding root data block is " << sup.nfree << endl;
 	lseek(fd,BLOCK_SIZE,SEEK_SET);
 	write(fd,&sup,sizeof(superblock_type));
 
@@ -281,13 +280,10 @@ void countfree(string filename){
 		while(vectemp.size() != 0){
 			int temp = vectemp.back();
 			vectemp.pop_back();
-			cout << "The block in count free is " << block << endl;
 			int loc = BLOCK_BOOT + (block * BLOCK_SIZE);
-			cout << "the location of loc is " << loc << endl;
-			cout <<"the location of vectory is " << temp << endl;
 			lseek(fd,loc,SEEK_SET);
                         read(fd,&storer,sizeof(superblock_type));
-			cout << "nfree from the file is " << storer.nfree << endl; 
+			//cout << "nfree from the file is " << storer.nfree << endl; 
 			acc = acc + storer.nfree;
 			block = storer.free[0];
 		}
@@ -309,7 +305,7 @@ void addfree(int numblock, int fd,int bootInode){
 		//sup.nfree++;
 		sup.nfree--;
 		//sup.free[sup.nfree] = numblock;
-		cout << "nfree is past 250, writing to block number " << numblock << endl;
+		//cout << "nfree is past 250, writing to block number " << numblock << endl;
 		write(fd,&sup,sizeof(superblock_type));
 		for(int i = 1; i < 249;i++){
 			sup.free[i] = 0;
