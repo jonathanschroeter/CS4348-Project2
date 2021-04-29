@@ -16,6 +16,7 @@ MAJOR DECISIONS MADE:
 		-At those data blocks, only nfree and free[] are stored
 	-After "initfs" has been run, "openfs" must be run again in order for "initfs" to be run
 	-count-free can only be run after "openfs" and "initfs" have been run
+	-If a file does not exist when running "openfs", the file will be created
 */
 
 //Headers
